@@ -1,5 +1,3 @@
-// Client side C/C++ program to demonstrate Socket
-// programming
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -53,6 +51,21 @@ char *get_status(char *input, const char *chr, int size)
     return splitted[0];
 }
 
+int* get_size_files(char *input){
+    int *toRet = (int *)malloc( 5120 * sizeof(char *));
+    int k = 0;
+    char *rest = strdup(input);
+    char *token = strtok_r(input, "!", &rest);
+
+    while (token != NULL)
+    {
+        toRet[k] = atoi(token);
+        k++;
+        token = strtok_r(NULL, "!", &rest);
+    }
+    return toRet;
+}
+
 int get_number_of_files_SEARCH(char *input, const char *chr, int size){
  
     char **splitted = get_string_splitted(input, chr, size);
@@ -62,14 +75,19 @@ int get_number_of_files_SEARCH(char *input, const char *chr, int size){
 
 char **get_fileList(char *input, const char *chr, int size)
 {
+    //printf("%s\n", input);
     char **splitted = get_string_splitted(input, chr, size);
+    //printf("22\n");
     char *files = (char *)malloc(num_files * sizeof(char));
     files = NULL;
     files = strdup(splitted[2]);
     char **files_splitted = get_string_splitted(files, "\\0", size);
-
-    nr_of_files = sizeof(files_splitted) - 1;
-
+    //printf("33\n");
+    //for (int i = 0; i < 3; i++){
+    //    printf("%s\n\n", splitted[i]);
+    //}
+    nr_of_files = atoi(splitted[3]);
+    //printf("%dasdasdasdas\n", nr_of_files);
     return files_splitted;
 }
 
@@ -163,6 +181,9 @@ char *get_to_send_string(char *operatie, char *nume_fisier)
     {
         return operatie;
     }
+    else if (strcmp(operatie, "EXIT") == 0 || strcmp(operatie, "exit") == 0){
+        return operatie;
+    }
 }
 
 void signal_handler(){
@@ -214,7 +235,15 @@ int main(int argc, char const *argv[])
     while (1)
     {
         //printf("checkk\n");
-
+        printf("-----------------------------------------------------------------------------\n");
+        printf("LIST/list: list files-size from server dir\n");
+        printf("GET/get <filename>: get <filename> file from server dir\n");
+        printf("PUT/put <filename>: put <filename> file in server dir\n");
+        printf("DELETE/delete <filename>: delete <filename> file from server dir\n");
+        printf("UPDATE/update <filename>: update content of <filename> file in server dir\n");
+        printf("SEARCH/search <word>: search content of <word> in files from server dir\n");
+        printf("EXIT/exit: disconnect client\n");
+        printf("-----------------------------------------------------------------------------\n");
         int error = 0;
         socklen_t len = sizeof (error);
         int retval = getsockopt (sock, SOL_SOCKET, SO_ERROR, &error, &len);
@@ -247,9 +276,12 @@ int main(int argc, char const *argv[])
         //printf("checkkkkkkkk\n");
         if (strcmp(input, "LIST") == 0 || strcmp(input, "list") == 0)
         {
+            char *buffy = (char *)malloc(1024 * sizeof(char));
             memset(buffer, 0, sizeof(buffer));
             send(sock, input, strlen(input), 0);
-            valread = recv(sock, buffer, 5120, 0);
+            valread = recv(sock, buffer, 1024, 0);
+            valread = recv(sock, buffy, 1024, 0);
+            //printf("%s\n", buffy);
             char *aux_buffer_0 = strdup(buffer);
             char *aux_buffer_1 = strdup(buffer);
             char *aux_buffer_2 = strdup(buffer);
@@ -258,14 +290,14 @@ int main(int argc, char const *argv[])
             char **filenames = get_fileList(aux_buffer_1, protocol_chr, num_files);
             // printf("2");
             int size = get_size_of_payload(aux_buffer_2, protocol_chr, num_files);
+            int *sizeFiles = get_size_files(buffy);
             // printf("3");
             printf("Status: %s\n", status);
 
             for (int i = 0; i < nr_of_files; i++)
             {
-                printf("->%d: %s\n", i, filenames[i]);
+                printf("->%d-: %s ---- %d\n", i, filenames[i], sizeFiles[i]);
             }
-            printf("size: %d\n", size);
         }
         else if (strstr(input, "GET") != NULL || strstr(input, "get") != NULL)
         {
@@ -421,6 +453,11 @@ int main(int argc, char const *argv[])
         }
         else if (strcmp(input, "EXIT") == 0 || strcmp(input, "exit") == 0)
         {
+            memset(buffer, 0, sizeof(buffer));
+            send(sock, input, strlen(input), 0);
+            recv(sock, buffer, 32, 0);
+            printf("Server send: %s\n", buffer);
+            
             close(client_fd);
             return 0;
         }
