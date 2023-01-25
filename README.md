@@ -10,3 +10,8 @@ Tema Pso Dumitrascu Andrei FileServer
     e)  UPDATE/update <filename>: actualizeaza continut dintr-un fisier de pe directorul serverului de la un octet introdus de client;
     f)  SEARCH/search <word>: cauta aparitia unui cuvant in toate fisierele stocate in memorie de catre thread-ul ce se ocupa cu acest lucru;
     g)  EXIT/exit: comanda pe care o da clientul pentru a se deconecta--serverul ramane treaz;
+    
+    
+#  Comanda pt compilare server: gcc server.c -o server -pthread
+#  Comanda pt compilare client: gcc client.c -o client
+
