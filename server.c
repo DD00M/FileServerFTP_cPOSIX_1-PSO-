@@ -48,14 +48,16 @@ int flag = 0;
 time_t current_time;
 
 char *files[num_files];
+int size_files[num_files];
+
 char *readFiles[num_files];
 
 char buffer[BUFSIZE] = {0};
 
-//return value for join
+// return value for join
 int val = -999;
 
-//search word
+// search word
 char *toSearchWord;
 
 // update vars
@@ -63,7 +65,7 @@ char *filename;
 off_t offset_update;
 int sizeFile_update;
 
-//thread index:
+// thread index:
 pthread_t th_id_spin;
 pthread_t tid;
 
@@ -158,7 +160,7 @@ void removeDuplicates(char **arr, int x[], int n)
                             strcpy(arr[k - 1], arr[k]);
                             x[k - 1] = x[k];
                         }
-                    }    // Decrement size of array(n) after removing duplicate element
+                    } // Decrement size of array(n) after removing duplicate element
                     n--;
                     j--;
                 }
@@ -228,17 +230,25 @@ void populate_struct_with_MostRecentWords(mostRecentWords_T *myStr)
         int size = BUFSIZE;
         int c = 0;
         strcpy(myStr[i].name, readFiles[i]);
-        for (int b = 0; b < nr_of_words; b++){
-            if (strcmp(p[b], p[b + 1]) == 0){
-                myStr[i].frequency[b] = -1;
-            strcpy(myStr[i].words[b], "-");
-            }else{
-            myStr[i].frequency[b] = auxFreq[b];
-            strcpy(myStr[i].words[b], p[b]);
+        for (int b = 0; b < nr_of_words; b++)
+        {
+            if (p[b] != NULL && p[b + 1] != NULL)
+            {
+                if (strcmp(p[b], p[b + 1]) == 0)
+                {
+                    myStr[i].frequency[b] = -1;
+                    strcpy(myStr[i].words[b], "-");
+                }
+                else
+                {
+                    myStr[i].frequency[b] = auxFreq[b];
+                    strcpy(myStr[i].words[b], p[b]);
+                }
             }
         }
     }
-    for (int i = 0; i < 5*BUFSIZE; i++){
+    for (int i = 0; i < 5 * BUFSIZE; i++)
+    {
         free(p[i]);
     }
     free(p);
@@ -300,7 +310,7 @@ void write_in_log(char *tip_operatie)
         strcat(logString, filename);
         strcat(logString, "\n");
         sizerr += strlen(ctime_no_newline) + 2 * 3 + 3 + strlen(filename) + 1;
-        printf("lallslasdlasdlasdlas: %d", sizerr);
+        //printf("lallslasdlasdlasdlas: %d", sizerr);
     }
     else if (strcmp(tip_operatie, "REMOVE") == 0)
     {
@@ -332,7 +342,7 @@ void write_in_log(char *tip_operatie)
     }
     else if (strcmp(tip_operatie, "SEARCH") == 0)
     {
-        printf("inside\n");
+        //printf("inside\n");
         char *ctime_no_newline;
         char *rest = strdup(ctime(&current_time));
         ctime_no_newline = strtok_r(ctime(&current_time), "\n", &rest);
@@ -343,7 +353,7 @@ void write_in_log(char *tip_operatie)
         strcat(logString, toSearchWord);
         strcat(logString, "\n");
         sizerr += strlen(ctime_no_newline) + 2 * 3 + 6 + strlen(toSearchWord) + 1;
-        printf("what happened\n");
+        //printf("what happened\n");
     }
     else if (strcmp(tip_operatie, "EXIT") == 0)
     {
@@ -356,10 +366,10 @@ void write_in_log(char *tip_operatie)
         strcat(logString, tip_operatie);
         strcat(logString, "\n");
     }
-    printf("log: %s\n", logString);
+    //printf("log: %s\n", logString);
     write(logFd, logString, sizerr);
     pthread_mutex_unlock(&mutex);
-    printf("endeddd\n");
+    //printf("endeddd\n");
 }
 
 int get_files()
@@ -376,6 +386,11 @@ int get_files()
             if (dir->d_type == DT_REG)
             {
                 files[i] = strdup(dir->d_name);
+
+                struct stat st;
+                stat(files[i], &st);
+                size_files[i] = st.st_size;
+
                 if (take_only_ExtFile(files[i]) == true)
                 {
                     readFiles[j] = strdup(files[i]);
@@ -438,30 +453,34 @@ char *get_result(char *my_str, int statusValue)
     strcat(myStr, "!");
 
     char result_integer[50];
-    sprintf(result_integer, "%ld", sizeof(myStr));
+    sprintf(result_integer, "%d", number_of_files);
 
     strcat(myStr, result_integer);
     strcat(myStr, "!");
     strcat(myStr, my_str);
 
+    strcat(myStr, "!");
+    strcat(myStr, result_integer);
+
     return myStr;
 }
 
-void free_spinning_func(mostRecentWords_T* strct){
-    for (int i = 0; i < number_of_files; i++){
+void free_spinning_func(mostRecentWords_T *strct)
+{
+    for (int i = 0; i < number_of_files; i++)
+    {
         free(files[i]);
     }
-    //free(files);
+    // free(files);
     for (int i = 0; i < number_of_readFiles; i++)
     {
         free(readFiles[i]);
     }
-    //free(readFiles);
-    printf("Errthang freed\n");
-    //for (int i = 0; i < number_of_readFiles; i++){
+    // free(readFiles);
+    //printf("Errthang freed\n");
+    // for (int i = 0; i < number_of_readFiles; i++){
     free(strct);
     //}
-
 }
 
 static void ask_handler(int signo)
@@ -475,18 +494,18 @@ static void ask_handler(int signo)
     if (bufferx[0] == 'y' || bufferx[0] == 'Y')
     {
         pthread_mutex_lock(&mutex_signal);
-        printf("1\n");
+        //printf("1\n");
         counter--;
         signal_condition = 1;
         pthread_mutex_unlock(&mutex_signal);
 
-        //printf("after shutdown\n");
+        // printf("after shutdown\n");
         pthread_join(tid, NULL);
-       // printf("2\n");
+        // printf("2\n");
         free_spinning_func(my_fileStruct);
-        //printf("3\n");
+        // printf("3\n");
         pthread_cancel(tid);
-        //printf("4\n");
+        // printf("4\n");
 
         shutdown(new_socket, SHUT_RDWR);
         shutdown(server_fd, SHUT_RDWR);
@@ -494,7 +513,9 @@ static void ask_handler(int signo)
         printf("Client %d disconnected\n", counter);
 
         exit(EXIT_SUCCESS);
-    }else{
+    }
+    else
+    {
         printf("wrong command\n");
     }
 }
@@ -524,14 +545,16 @@ static void set_signals(void)
     }
 }
 
-void signal_handler2(){
+void signal_handler2()
+{
     shutdown(new_socket, SHUT_RDWR);
-    //shutdown(server_fd, SHUT_RDWR);
+    // shutdown(server_fd, SHUT_RDWR);
     printf("Server closed comunication for socket\n");
     exit(EXIT_SUCCESS);
 }
 
-void set_signals2(){
+void set_signals2()
+{
     struct sigaction sa;
 
     memset(&sa, 0, sizeof(sa));
@@ -620,7 +643,7 @@ void *pthread_LIST(int new_socket)
     int nr_of_files = get_files();
     int total_length = 0;
 
-    printf("Numarul de fisiere este: %d\n", nr_of_files);
+    //printf("Numarul de fisiere este: %d\n", nr_of_files);
 
     // for (int i = 0; i < nr_of_files; i++)
     // {
@@ -628,20 +651,36 @@ void *pthread_LIST(int new_socket)
     //}
 
     char *return_list = (char *)malloc(BUFSIZE * sizeof(char));
+    char *return_IntList = (char *)malloc(BUFSIZE * sizeof(char));
+
     strcpy(return_list, files[0]);
     strcat(return_list, "\\0");
+
+    char result_integer[10];
+    sprintf(result_integer, "%d", size_files[0]);
+    //printf("%s-%d\n", result_integer, size_files[0]);
+    strcpy(return_IntList, result_integer);
+    strcat(return_IntList, "!");
+
     for (int i = 1; i < nr_of_files; i++)
     {
+        memset(result_integer, 0 , 10);
         strcat(return_list, files[i]);
         strcat(return_list, "\\0");
+        sprintf(result_integer, "%d", size_files[i]);
+        //printf("%s-%d\n", result_integer, size_files[i]);
+        strcat(return_IntList, result_integer);
+        strcat(return_IntList, "!");
     }
     control_operationValue = isLIST;
     pthread_mutex_unlock(&mutex);
-    //printf("before log\n");
+    // printf("before log\n");
     write_in_log("LIST");
-    //printf("after log\n");
+    // printf("after log\n");
     char *myStr = get_result(return_list, 0);
-    send(new_socket, myStr, strlen(myStr), 0);
+    //printf("_______________________\n%s---------------------\n", myStr);
+    send(new_socket, myStr, BUFSIZE, 0);
+    send(new_socket, return_IntList, BUFSIZE, 0);
     memset(buffer, 0, sizeof(buffer));
 }
 
@@ -685,13 +724,13 @@ void *pthread_DELETE(int new_socket)
     char status[32] = {0};
     if (access(filename, F_OK) == 0)
     {
-        //printf("before remove\n");
+        // printf("before remove\n");
         int x;
         x = remove(filename);
-        //printf("after remove\n");
+        // printf("after remove\n");
         if (x == 0)
         {
-            //printf("succes\n");
+            // printf("succes\n");
             strcpy(status, "Success");
             send(new_socket, status, sizeof(status), 0);
             printf("a dat send\n");
@@ -765,7 +804,8 @@ void *pthread_UPDATE(int socket)
     return NULL;
 }
 
-void *pthread_SEARCH(int socket){
+void *pthread_SEARCH(int socket)
+{
     pthread_mutex_lock(&mutex);
     bool isFound = false;
     bool didStrcpy = false;
@@ -773,18 +813,24 @@ void *pthread_SEARCH(int socket){
     char toSendString[BUFSIZE];
     int howManyFiles = 0;
     int check = 0;
-    //memset(check, 0, number_of_readFiles);
-    for (int i = 0; i < number_of_readFiles; i++){
-        for (int j = 0; j < nr_of_words; j++){
-            //printf("-%s- -%s-\n", my_fileStruct[i].words[j], toSearchWord);
-            if (strcmp(my_fileStruct[i].words[j], toSearchWord) == 0){
+    // memset(check, 0, number_of_readFiles);
+    for (int i = 0; i < number_of_readFiles; i++)
+    {
+        for (int j = 0; j < nr_of_words; j++)
+        {
+            // printf("-%s- -%s-\n", my_fileStruct[i].words[j], toSearchWord);
+            if (strcmp(my_fileStruct[i].words[j], toSearchWord) == 0)
+            {
                 check = 1;
                 isFound = true;
-                if (didStrcpy == false){
+                if (didStrcpy == false)
+                {
                     strcpy(toSendString, my_fileStruct[i].name);
                     strcat(toSendString, "\\0");
                     didStrcpy = true;
-                }else{
+                }
+                else
+                {
                     strcat(toSendString, my_fileStruct[i].name);
                     strcat(toSendString, "\\0");
                 }
@@ -793,33 +839,37 @@ void *pthread_SEARCH(int socket){
         }
     }
 
-    if (check == 0){
+    if (check == 0)
+    {
         strcpy(status, "Failed");
         send(socket, status, 64, 0);
-    }else{
-        //printf("a intrat pe succes\n");
+    }
+    else
+    {
+        // printf("a intrat pe succes\n");
         strcpy(status, "Success");
         strcat(status, "!");
         char result_integer[10];
         sprintf(result_integer, "%d", howManyFiles);
         strcat(status, result_integer);
-        //printf("status: %s\n", status);
+        // printf("status: %s\n", status);
         send(socket, status, 64, 0);
-        //printf("%s\n", toSendString);
+        // printf("%s\n", toSendString);
         send(socket, toSendString, 1024, 0);
     }
     memset(toSearchWord, 0, sizeof(toSearchWord));
     pthread_mutex_unlock(&mutex);
-    //printf("inainte de log\n");
+    // printf("inainte de log\n");
     write_in_log("SEARCH");
 }
 
 void *thread_spinning_func()
 {
-    while (1) 
+    while (1)
     {
         pthread_mutex_lock(&mutex);
-        while (!condition_spin) {
+        while (!condition_spin)
+        {
             pthread_cond_wait(&cond, &mutex);
         }
         printf("Thread woke up!\n");
@@ -829,7 +879,7 @@ void *thread_spinning_func()
         }
 
         number_of_files = get_files();
-        //printf("got files: %d %d\n", number_of_files, number_of_readFiles);
+        // printf("got files: %d %d\n", number_of_files, number_of_readFiles);
         populate_struct_with_MostRecentWords(my_fileStruct);
 
         pthread_mutex_unlock(&mutex);
@@ -843,13 +893,14 @@ void *pthread_exec_func(void *arg)
     {
         int new_socket = *((int *)arg);
         memset(buffer, 0, sizeof(buffer));
-        //printf("ZZZZZZZZZZZZZZZZZZZZZZZZZZ: %d\n", signal_condition);
-        if (signal_condition == 1) {
-            //printf("a iesit\n");
+        // printf("ZZZZZZZZZZZZZZZZZZZZZZZZZZ: %d\n", signal_condition);
+        if (signal_condition == 1)
+        {
+            // printf("a iesit\n");
             void *status;
             pthread_exit(status);
         }
-        //printf("SALUT\n");
+        // printf("SALUT\n");
         int valread = recv(new_socket, buffer, BUFSIZE, 0);
         printf("Client %d sent: %s\n", counter, buffer);
         char *myBuf = (char *)malloc(sizeof(buffer) * sizeof(char));
@@ -858,9 +909,12 @@ void *pthread_exec_func(void *arg)
         char **split = get_string_splitted(myBuf, "!");
         if (strcmp(split[0], "LIST") == 0 || strcmp(split[0], "list") == 0)
         {
-            printf("a intrat pe list\n");
+            //printf("a intrat pe list\n");
             // return
+            printf("Executing List\n");
             pthread_LIST(new_socket);
+            
+            printf("Executed List\n");
         }
         else if (strcmp(split[0], "GET") == 0 || strcmp(split[0], "get") == 0)
         {
@@ -916,17 +970,29 @@ void *pthread_exec_func(void *arg)
         }
         else if (strcmp(split[0], "SEARCH") == 0 || strcmp(split[0], "search") == 0)
         {
-            //printf("0x\n");
+            // printf("0x\n");
             pthread_mutex_lock(&mutex);
             toSearchWord = NULL;
-            //printf("1x\n");
+            // printf("1x\n");
             toSearchWord = strdup(split[2]);
-            //printf("2x\n");
-            //printf("saluttt: %s\n", toSearchWord);
+            // printf("2x\n");
+            // printf("saluttt: %s\n", toSearchWord);
             pthread_mutex_unlock(&mutex);
-            //printf("a intrat in search\n");
-            // return
+            // printf("a intrat in search\n");
+            //  return
             pthread_SEARCH(new_socket);
+        }
+        else if (strcmp(split[0], "EXIT") == 0 || strcmp(split[0], "exit") == 0)
+        {
+            char *buffy = (char*)malloc(32 * sizeof(char));
+            strcpy(buffy, "Disconnect");
+
+            send(new_socket, buffy, 32, 0);
+            shutdown(new_socket, SHUT_RDWR);
+            //shutdown(server_fd, SHUT_RDWR);
+
+            pthread_exit(&tid);
+            exit(EXIT_SUCCESS);
         }
         else
             return NULL;
@@ -962,9 +1028,9 @@ int main(int argc, char const *argv[])
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(PORT);
-    
+
     my_fileStruct = (mostRecentWords_T *)malloc(number_of_readFiles * sizeof(mostRecentWords_T));
-    
+
     pthread_cond_init(&cond, NULL);
     pthread_mutex_init(&mutex, NULL);
 
@@ -974,12 +1040,12 @@ int main(int argc, char const *argv[])
     condition_spin = 1;
     pthread_cond_signal(&cond);
     pthread_mutex_unlock(&mutex);
-    //pthread_join(th_id_spin, NULL);
-    //pthread_join(th_id_spin, NULL);
-    for (int i = 0; i < number_of_files; i++)
-    {
-        printf("%d-%s\n", i, files[i]);
-    }
+    // pthread_join(th_id_spin, NULL);
+    // pthread_join(th_id_spin, NULL);
+    //for (int i = 0; i < number_of_files; i++)
+    //{
+    //    printf("%d-%s\n", i, files[i]);
+    //}
 
     // pthread_join(th_id_spin, NULL);
     //   Forcefully attaching socket to the port 8080
@@ -1001,14 +1067,13 @@ int main(int argc, char const *argv[])
         {
             perror("accept");
             exit(EXIT_FAILURE);
-        
         }
         counter++;
 
         pthread_mutex_lock(&mutex_signal);
         signal_condition = 0;
         pthread_mutex_unlock(&mutex_signal);
-        
+
         printf("Client %d connected\n", counter);
         pthread_create(&tid, NULL, pthread_exec_func, (void *)&new_socket);
         printf("Thread %d created\n", counter);
